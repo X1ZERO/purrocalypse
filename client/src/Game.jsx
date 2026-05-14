@@ -49,7 +49,6 @@ export default function Game({ state, lobby, myId }) {
   const bombOnMe = state.pendingExplosion?.playerId === myId;
   const favorOnMe =
     state.pendingAction?.type === 'favor_pick' && state.pendingAction.target === myId;
-  const hasNope = state.yourHand.some((c) => c.type === 'nope');
   const hasDefuse = state.yourHand.some((c) => c.type === 'defuse');
 
   const toggle = (cardId) => {
@@ -126,6 +125,11 @@ export default function Game({ state, lobby, myId }) {
     catch (e) { alert(e.message); }
   };
 
+  const passVote = async () => {
+    try { await emit('game:pass', {}); }
+    catch (e) { alert(e.message); }
+  };
+
   const favorGive = async (cardId) => {
     try { await emit('game:favorGive', { cardId }); }
     catch (e) { alert(e.message); }
@@ -176,9 +180,19 @@ export default function Game({ state, lobby, myId }) {
       {state.pendingAction && !favorOnMe && (
         <div className="banner">
           Pending: <strong>{state.pendingAction.type}</strong> by {state.players.find((p) => p.id === state.pendingAction.by)?.name}
-          {' '} (Nopes: {state.pendingAction.nopes})
-          {hasNope && state.pendingAction.by !== myId && state.pendingAction.type !== 'favor_pick' && (
-            <button onClick={nope} style={{ marginLeft: 12 }}>NOPE!</button>
+          <div style={{ marginTop: 6, fontSize: '0.9rem' }}>
+            Nopes: {state.pendingAction.nopes} • Votes:{' '}
+            {state.pendingAction.nopes + state.pendingAction.passes}/{state.pendingAction.eligibleCount}
+            {state.pendingAction.eligibleCount === 0 && ' (no one has Nope — auto-resolve)'}
+          </div>
+          {state.pendingAction.youCanVote && !state.pendingAction.youVoted && state.pendingAction.type !== 'favor_pick' && (
+            <div style={{ marginTop: 8 }}>
+              <button onClick={nope}>NOPE! 🚫</button>
+              <button className="secondary" onClick={passVote} style={{ marginLeft: 8 }}>Pass ✋</button>
+            </div>
+          )}
+          {state.pendingAction.youVoted && (
+            <div style={{ marginTop: 6, color: 'var(--gold)' }}>You voted — waiting for others...</div>
           )}
         </div>
       )}

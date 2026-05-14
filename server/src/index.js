@@ -120,6 +120,14 @@ io.on('connection', (socket) => {
   );
 
   socket.on(
+    'game:pass',
+    safe(() => {
+      const room = requireRoom();
+      actions.pass(room, io, playerId);
+    })
+  );
+
+  socket.on(
     'game:favorGive',
     safe(({ cardId }) => {
       const room = requireRoom();

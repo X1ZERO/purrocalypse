@@ -67,6 +67,12 @@ export function publicState(g, viewerId) {
           target: g.pendingAction.target,
           payload: g.pendingAction.payload,
           nopes: g.pendingAction.nopes.length,
+          passes: g.pendingAction.passes?.length || 0,
+          eligibleCount: g.pendingAction.eligible?.length || 0,
+          youCanVote: g.pendingAction.eligible?.includes(viewerId) || false,
+          youVoted:
+            g.pendingAction.nopes.includes(viewerId) ||
+            (g.pendingAction.passes || []).includes(viewerId),
         }
       : null,
     log: g.log.slice(-30),
@@ -262,7 +268,16 @@ function applySingleCard(g, playerId, card, opts) {
   }
 }
 
+function eligibleNopers(g) {
+  return g.players
+    .filter((p) => p.alive)
+    .filter((p) => g.hands[p.id].some((c) => c.type === CARD_TYPES.NOPE))
+    .map((p) => p.id);
+}
+
 function queueAction(g, action) {
+  action.passes = [];
+  action.eligible = eligibleNopers(g);
   g.pendingAction = action;
   const by = g.players.find((p) => p.id === action.by);
   const tgt = g.players.find((p) => p.id === action.target);
@@ -272,16 +287,39 @@ function queueAction(g, action) {
   );
 }
 
+export function allVoted(g) {
+  const a = g.pendingAction;
+  if (!a) return false;
+  if (a.type === 'favor_pick') return false;
+  const voted = new Set([...a.nopes, ...a.passes]);
+  return a.eligible.every((id) => voted.has(id));
+}
+
 export function playNope(g, playerId) {
   if (!g.pendingAction) throw new Error('Nothing to Nope');
+  if (g.pendingAction.type === 'favor_pick') throw new Error('Cannot Nope a favor pick');
   const hand = g.hands[playerId];
   const idx = hand.findIndex((c) => c.type === CARD_TYPES.NOPE);
   if (idx < 0) throw new Error('No Nope in hand');
   const [card] = hand.splice(idx, 1);
   g.discard.push(card);
   g.pendingAction.nopes.push(playerId);
+  g.pendingAction.passes = g.pendingAction.passes.filter((id) => id !== playerId);
+  g.pendingAction.eligible = eligibleNopers(g);
+  if (!g.pendingAction.eligible.includes(playerId)) {
+    g.pendingAction.eligible.push(playerId);
+  }
   const p = g.players.find((x) => x.id === playerId);
   logCard(g, `${p.name} Nopes!`);
+}
+
+export function passNope(g, playerId) {
+  if (!g.pendingAction) throw new Error('Nothing to pass on');
+  if (g.pendingAction.type === 'favor_pick') throw new Error('Nothing to pass on');
+  if (!g.pendingAction.eligible.includes(playerId))
+    throw new Error('You have no Nope to vote with');
+  if (g.pendingAction.passes.includes(playerId)) return;
+  g.pendingAction.passes.push(playerId);
 }
 
 export function resolvePending(g) {

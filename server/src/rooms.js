@@ -3,6 +3,8 @@ import {
   publicState,
   playCards,
   playNope,
+  passNope,
+  allVoted,
   resolvePending,
   favorGive,
   alterCommit,
@@ -97,11 +99,17 @@ function scheduleResolve(room, io) {
     if (room.game && room.game.pendingAction && room.game.pendingAction.type !== 'favor_pick') {
       resolvePending(room.game);
       broadcast(room, io);
-      if (room.game.pendingAction && room.game.pendingAction.type === 'favor_pick') {
-        // wait for target to pick — no auto-resolve
-      }
     }
   }, NOPE_WINDOW_MS);
+}
+
+function maybeResolveEarly(room) {
+  if (!room.game?.pendingAction) return;
+  if (room.game.pendingAction.type === 'favor_pick') return;
+  if (allVoted(room.game)) {
+    if (room.pendingResolveTimer) clearTimeout(room.pendingResolveTimer);
+    resolvePending(room.game);
+  }
 }
 
 export function broadcast(room, io) {
@@ -114,12 +122,21 @@ export function broadcast(room, io) {
 export const actions = {
   play(room, io, playerId, cardIds, opts) {
     playCards(room.game, playerId, cardIds, opts);
-    if (room.game.pendingAction) scheduleResolve(room, io);
+    if (room.game.pendingAction) {
+      maybeResolveEarly(room);
+      if (room.game.pendingAction) scheduleResolve(room, io);
+    }
     broadcast(room, io);
   },
   nope(room, io, playerId) {
     playNope(room.game, playerId);
-    scheduleResolve(room, io);
+    maybeResolveEarly(room, io);
+    if (room.game.pendingAction) scheduleResolve(room, io);
+    broadcast(room, io);
+  },
+  pass(room, io, playerId) {
+    passNope(room.game, playerId);
+    maybeResolveEarly(room, io);
     broadcast(room, io);
   },
   favorGive(room, io, targetId, cardId) {
