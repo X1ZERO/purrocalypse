@@ -10,7 +10,7 @@ Inspired by the Exploding Kittens party edition (2–10 players). Original art a
 - Client: React 18 + Vite
 - Realtime rooms over WebSockets
 
-## Quick start
+## Quick start (local)
 
 ```bash
 npm install
@@ -21,6 +21,16 @@ npm run dev
 - Server: http://localhost:3001
 
 Open the client URL in multiple browser tabs / on multiple devices on the same LAN to test.
+
+## Deploy (one Render service)
+
+1. Push to GitHub.
+2. https://render.com → New → Web Service → connect repo.
+3. Render auto-detects `render.yaml`. Click Apply.
+4. Wait ~3 min for first build. Get your URL: `https://purrocalypse.onrender.com`.
+5. Share that URL. Friends open it in browser. Done.
+
+Free tier sleeps after 15 min idle — first hit takes ~30s to wake.
 
 ## How to play
 

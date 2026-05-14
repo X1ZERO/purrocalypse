@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import http from 'http';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { Server } from 'socket.io';
 import { nanoid } from 'nanoid';
 import {
@@ -16,14 +18,19 @@ import {
 const PORT = process.env.PORT || 3001;
 const app = express();
 app.use(cors());
-app.get('/', (_, res) =>
-  res.json({
-    name: 'purrocalypse-server',
-    ok: true,
-    msg: 'Socket.IO game server. Connect via the client app, not your browser.',
-  })
-);
 app.get('/health', (_, res) => res.json({ ok: true }));
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const clientDist = path.resolve(__dirname, '../../client/dist');
+
+app.use(express.static(clientDist));
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/socket.io')) return next();
+  res.sendFile(path.join(clientDist, 'index.html'), (err) => {
+    if (err) next();
+  });
+});
 
 const server = http.createServer(app);
 const io = new Server(server, {
