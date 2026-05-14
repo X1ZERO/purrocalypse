@@ -47,6 +47,7 @@ export default function Game({ state, lobby, myId }) {
   const myTurn = state.turnPlayerId === myId;
   const others = state.players.filter((p) => p.id !== myId && p.alive);
   const bombOnMe = state.pendingExplosion?.playerId === myId;
+  const implodeOnMe = state.pendingImplosionPlace?.playerId === myId;
   const favorOnMe =
     state.pendingAction?.type === 'favor_pick' && state.pendingAction.target === myId;
   const hasDefuse = state.yourHand.some((c) => c.type === 'defuse');
@@ -120,6 +121,14 @@ export default function Game({ state, lobby, myId }) {
     catch (e) { alert(e.message); }
   };
 
+  const placeKitten = async () => {
+    const pos = parseInt(insertPos, 10);
+    try {
+      await emit('game:placeImploding', { insertPos: isNaN(pos) ? 0 : pos });
+      setInsertPos('');
+    } catch (e) { alert(e.message); }
+  };
+
   const nope = async () => {
     try { await emit('game:nope', {}); }
     catch (e) { alert(e.message); }
@@ -153,6 +162,27 @@ export default function Game({ state, lobby, myId }) {
 
   return (
     <>
+      {implodeOnMe && (
+        <div className="banner danger">
+          ☠️ You revealed the IMPLODING KITTEN! Place it back FACE-UP in the deck. Everyone will see where you put it. (Next time anyone draws it = instant death.)
+          <div style={{ marginTop: 8 }}>
+            <input
+              placeholder="Depth from top (0 = top, blank = top)"
+              value={insertPos}
+              onChange={(e) => setInsertPos(e.target.value)}
+              style={{ maxWidth: 260, marginRight: 8 }}
+            />
+            <button className="gold" onClick={placeKitten}>Place back</button>
+          </div>
+        </div>
+      )}
+
+      {state.revealedKitten && !implodeOnMe && (
+        <div className="banner danger">
+          ☠️ Imploding Kitten is in the deck — <strong>{state.revealedKitten.depth} cards from top</strong>. Next time anyone draws it, they die instantly (no defuse).
+        </div>
+      )}
+
       {bombOnMe && (
         <div className="banner danger">
           💥 You drew a BOMB!

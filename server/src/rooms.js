@@ -11,6 +11,7 @@ import {
   drawCard,
   defuse,
   explode,
+  placeImploding,
 } from './game.js';
 
 const rooms = new Map();
@@ -157,6 +158,10 @@ export const actions = {
   },
   explode(room, io, playerId) {
     explode(room.game, playerId);
+    broadcast(room, io);
+  },
+  placeImploding(room, io, playerId, insertPos) {
+    placeImploding(room.game, playerId, insertPos);
     broadcast(room, io);
   },
 };

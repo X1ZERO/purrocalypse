@@ -22,6 +22,7 @@ export function createGame(players) {
   const extraDefuses = Math.max(0, n - 1);
   for (let i = 0; i < extraDefuses; i++) deck.push(mk(CARD_TYPES.DEFUSE));
   for (let i = 0; i < n - 1; i++) deck.push(mk(CARD_TYPES.BOMB));
+  deck.push({ id: nanoid(8), type: CARD_TYPES.IMPLODING_KITTEN, seenOnce: false });
   deck = shuffle(deck);
 
   const streakerId = players[Math.floor(Math.random() * n)].id;
@@ -36,6 +37,7 @@ export function createGame(players) {
     turnsLeft: 1,
     streakerId,
     pendingExplosion: null, // { playerId }
+    pendingImplosionPlace: null, // { playerId, cardId }
     pendingAction: null, // { type, by, target?, payload?, nopes: [], resolveAt }
     pendingAlter: null, // { playerId, cards: [...] }
     log: [],
@@ -60,6 +62,10 @@ export function publicState(g, viewerId) {
     turnPlayerId: currentPlayer(g)?.id || null,
     turnsLeft: g.turnsLeft,
     pendingExplosion: g.pendingExplosion,
+    pendingImplosionPlace: g.pendingImplosionPlace
+      ? { playerId: g.pendingImplosionPlace.playerId }
+      : null,
+    revealedKitten: findRevealedKitten(g),
     pendingAction: g.pendingAction
       ? {
           type: g.pendingAction.type,
@@ -88,6 +94,16 @@ export function publicState(g, viewerId) {
         ? g.pendingAlter.cards
         : null,
   };
+}
+
+function findRevealedKitten(g) {
+  for (let i = g.deck.length - 1; i >= 0; i--) {
+    const c = g.deck[i];
+    if (c.type === CARD_TYPES.IMPLODING_KITTEN && c.seenOnce) {
+      return { depth: g.deck.length - 1 - i };
+    }
+  }
+  return null;
 }
 
 function currentPlayer(g) {
@@ -139,6 +155,7 @@ export function playCards(g, playerId, cardIds, opts = {}) {
   const cur = currentPlayer(g);
   if (!cur || cur.id !== playerId) throw new Error('Not your turn');
   if (g.pendingExplosion) throw new Error('Resolve explosion first');
+  if (g.pendingImplosionPlace) throw new Error('Place the Imploding Kitten first');
   if (g.pendingAlter) throw new Error('Finish Alter the Future first');
 
   const hand = g.hands[playerId];
@@ -180,20 +197,6 @@ export function playCards(g, playerId, cardIds, opts = {}) {
       by: playerId,
       target: opts.target,
       payload: { cardType: opts.cardType },
-      nopes: [],
-    });
-  } else if (
-    removed.length === 2 &&
-    types.includes(CARD_TYPES.HALF_BOMB_A) &&
-    types.includes(CARD_TYPES.HALF_BOMB_B)
-  ) {
-    g.hands[playerId] = remaining;
-    g.discard.push(...removed);
-    if (!opts.target) throw new Error('Pick a target');
-    queueAction(g, {
-      type: 'half_bomb_ko',
-      by: playerId,
-      target: opts.target,
       nopes: [],
     });
   } else {
@@ -376,15 +379,6 @@ export function resolvePending(g) {
       }
       break;
     }
-    case 'half_bomb_ko': {
-      tgt.alive = false;
-      logCard(g, `${tgt.name} was KO'd by Half-Bomb combo!`);
-      g.discard.push(...g.hands[a.target]);
-      g.hands[a.target] = [];
-      checkWin(g);
-      if (!g.players[g.turnIdx].alive) advanceTurn(g);
-      break;
-    }
   }
 }
 
@@ -424,6 +418,7 @@ export function drawCard(g, playerId) {
   const cur = currentPlayer(g);
   if (!cur || cur.id !== playerId) throw new Error('Not your turn');
   if (g.pendingExplosion) throw new Error('Resolve explosion');
+  if (g.pendingImplosionPlace) throw new Error('Place the Imploding Kitten first');
   if (g.pendingAction) throw new Error('Resolve pending action');
   if (g.pendingAlter) throw new Error('Finish Alter the Future first');
   if (g.deck.length === 0) {
@@ -437,8 +432,40 @@ export function drawCard(g, playerId) {
     logCard(g, `${p.name} drew a BOMB!`);
     return;
   }
+  if (card.type === CARD_TYPES.IMPLODING_KITTEN) {
+    if (!card.seenOnce) {
+      card.seenOnce = true;
+      g.pendingImplosionPlace = { playerId, cardId: card.id };
+      logCard(g, `${p.name} revealed the IMPLODING KITTEN! Must place it back face-up.`);
+      return;
+    }
+    p.alive = false;
+    g.discard.push(...g.hands[playerId], card);
+    g.hands[playerId] = [];
+    logCard(g, `${p.name} drew the Imploding Kitten a second time — INSTANT EXPLOSION! No defuse possible.`);
+    checkWin(g);
+    if (!g.over) {
+      g.turnsLeft = 1;
+      if (!g.players[g.turnIdx].alive) advanceTurn(g);
+    }
+    return;
+  }
   g.hands[playerId].push(card);
   logCard(g, `${p.name} drew a card`);
+  g.turnsLeft -= 1;
+  if (g.turnsLeft <= 0) advanceTurn(g);
+}
+
+export function placeImploding(g, playerId, insertPos) {
+  if (!g.pendingImplosionPlace || g.pendingImplosionPlace.playerId !== playerId)
+    throw new Error('No imploding kitten to place');
+  const cardId = g.pendingImplosionPlace.cardId;
+  const card = { id: cardId, type: CARD_TYPES.IMPLODING_KITTEN, seenOnce: true };
+  const pos = Math.max(0, Math.min(g.deck.length, insertPos ?? 0));
+  g.deck.splice(g.deck.length - pos, 0, card);
+  const p = g.players.find((x) => x.id === playerId);
+  logCard(g, `${p.name} placed the Imploding Kitten back (depth ${pos}).`);
+  g.pendingImplosionPlace = null;
   g.turnsLeft -= 1;
   if (g.turnsLeft <= 0) advanceTurn(g);
 }

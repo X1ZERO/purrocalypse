@@ -167,6 +167,14 @@ io.on('connection', (socket) => {
     })
   );
 
+  socket.on(
+    'game:placeImploding',
+    safe(({ insertPos }) => {
+      const room = requireRoom();
+      actions.placeImploding(room, io, playerId, insertPos);
+    })
+  );
+
   socket.on('disconnect', () => {
     if (roomId && playerId) {
       const room = leaveRoom(roomId, playerId);

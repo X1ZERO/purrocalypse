@@ -2,11 +2,10 @@ import { useState } from 'react';
 import { LABELS, ICONS } from './Card.jsx';
 
 const ORDER = [
-  'bomb', 'defuse', 'nope',
+  'bomb', 'imploding_kitten', 'defuse', 'nope',
   'skip', 'attack', 'targeted_attack',
   'favor', 'shuffle', 'see_future', 'alter_future',
   'cat_taco', 'cat_beard', 'cat_potato', 'cat_rainbow', 'cat_melon', 'feral_cat',
-  'half_bomb_a', 'half_bomb_b',
 ];
 
 const TEXT = {
@@ -30,7 +29,6 @@ const TEXT = {
       ['แมวคู่ (2 ใบเหมือนกัน)', 'ขโมยการ์ดสุ่ม 1 ใบจากผู้เล่นที่เลือก'],
       ['แมวสาม (3 ใบเหมือนกัน)', 'ระบุชื่อการ์ดที่ต้องการ ถ้าเป้าหมายมีก็ได้ไป'],
       ['Feral Cat (แมวจร)', 'นับเป็นแมวอะไรก็ได้ ใช้แทนแมวอื่นเพื่อทำคู่/สาม ต้องมีแมวจริงอย่างน้อย 1 ใบในชุด'],
-      ['Half-Bomb ซ้าย + ขวา', 'จับคู่ครึ่งระเบิดเพื่อ KO ผู้เล่นคนใดก็ได้ทันที (Nope ได้)'],
     ],
     streaker: 'Streaker (เปลือยมือ)',
     streakerText: 'ผู้เล่น 1 คนจะถูกสุ่มให้เริ่มเกมโดยไม่มีการ์ดในมือเลย — แค่จั่วและเล่นแต่ละตา ความเสี่ยงสูงมาก',
@@ -60,7 +58,6 @@ const TEXT = {
       ['Cat pair (2 same)', 'Steal a random card from a target.'],
       ['Cat triple (3 same)', 'Name a card type; take it from target if they have it.'],
       ['Feral Cat', 'Counts as any cat. Needs at least one real cat in the combo.'],
-      ['Half-Bomb L + R', 'Instantly KO any player. Can be Noped.'],
     ],
     streaker: 'Streaker',
     streakerText: 'One random player starts with no hand. They just draw + play each turn — fully exposed.',
@@ -87,11 +84,10 @@ const RULES_TEXT = {
     cat_potato: 'แมวคู่ขโมยสุ่ม 1 ใบ • แมวสามระบุชื่อการ์ด',
     cat_rainbow: 'แมวคู่ขโมยสุ่ม 1 ใบ • แมวสามระบุชื่อการ์ด',
     cat_melon: 'แมวคู่ขโมยสุ่ม 1 ใบ • แมวสามระบุชื่อการ์ด',
-    half_bomb_a: 'จับคู่ Left + Right = KO ผู้เล่นคนใดก็ได้ทันที',
-    half_bomb_b: 'จับคู่ Left + Right = KO ผู้เล่นคนใดก็ได้ทันที',
     feral_cat: 'แมวจร — นับเป็นแมวอะไรก็ได้สำหรับทำคู่/สาม เล่นเดี่ยวไม่ได้',
     alter_future: 'เปลี่ยนอนาคต — ดูการ์ด 3 ใบบนสุด แล้วจัดเรียงใหม่ตามใจ (Party Pack)',
     targeted_attack: 'โจมตีเจาะจง — จบตาโดยไม่ต้องจั่ว เลือกผู้เล่นใดก็ได้ให้เล่น 2 ตา (Party Pack)',
+    imploding_kitten: 'แมวระเบิดมรณะ — มี 1 ใบในกอง คนแรกที่จั่วเจอต้องใส่กลับเข้ากองหงายหน้าตำแหน่งไหนก็ได้ (ทุกคนเห็นตำแหน่ง) ครั้งที่สองที่ใครจั่วเจอ = ระเบิดทันที ใช้ปลดชนวนไม่ได้',
   },
   en: {
     bomb: 'Draw it = you die unless you have a Defuse.',
@@ -107,11 +103,10 @@ const RULES_TEXT = {
     cat_potato: 'Pair = steal random • Triple = name card.',
     cat_rainbow: 'Pair = steal random • Triple = name card.',
     cat_melon: 'Pair = steal random • Triple = name card.',
-    half_bomb_a: 'Combine L + R to instantly KO any player.',
-    half_bomb_b: 'Combine L + R to instantly KO any player.',
     feral_cat: 'Wild cat. Counts as any cat for pairs/triples. Cannot play alone.',
     alter_future: 'View AND reorder the top 3 cards of the deck. (Party Pack)',
     targeted_attack: 'End turn no-draw. Pick any player to take 2 turns. (Party Pack)',
+    imploding_kitten: 'One in deck. First draw: place it back face-up anywhere (visible to all). Second draw by anyone = instant death, defuse does NOT work.',
   },
 };
 
@@ -129,11 +124,10 @@ const CARD_NAMES_TH = {
   cat_potato: 'แมวมันฝรั่ง',
   cat_rainbow: 'แมวสายรุ้ง',
   cat_melon: 'แมวแตงโม',
-  half_bomb_a: 'ครึ่งระเบิด (ซ้าย)',
-  half_bomb_b: 'ครึ่งระเบิด (ขวา)',
   feral_cat: 'แมวจร',
   alter_future: 'เปลี่ยนอนาคต',
   targeted_attack: 'โจมตีเจาะจง',
+  imploding_kitten: 'แมวระเบิดมรณะ',
 };
 
 export default function Rules() {

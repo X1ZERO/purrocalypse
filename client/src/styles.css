@@ -103,7 +103,7 @@ input {
 .card .name { font-weight: 700; }
 .card.bomb { background: linear-gradient(135deg, #ff3b3b, #8b0000); }
 .card.defuse { background: linear-gradient(135deg, #1f9d55, #0a5436); }
-.card.half_bomb_a, .card.half_bomb_b { background: linear-gradient(135deg, #ff6f00, #b34500); }
+.card.imploding_kitten { background: linear-gradient(135deg, #2a0a0a, #6b0a1a); border-color: #ff3b3b; }
 .card.nope { background: linear-gradient(135deg, #ff5e7e, #b32a4a); }
 .card.cat_taco, .card.cat_beard, .card.cat_potato, .card.cat_rainbow, .card.cat_melon {
   background: linear-gradient(135deg, #6a5dab, #3a2d6b);

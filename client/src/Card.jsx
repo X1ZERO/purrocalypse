@@ -12,11 +12,10 @@ const ICONS = {
   cat_potato: '🥔',
   cat_rainbow: '🌈',
   cat_melon: '🍉',
-  half_bomb_a: '◐',
-  half_bomb_b: '◑',
   feral_cat: '😼',
   alter_future: '🔮',
   targeted_attack: '🎯',
+  imploding_kitten: '☠️',
 };
 
 const LABELS = {
@@ -33,11 +32,10 @@ const LABELS = {
   cat_potato: 'Potato Cat',
   cat_rainbow: 'Rainbow Cat',
   cat_melon: 'Melon Cat',
-  half_bomb_a: 'Half-Bomb L',
-  half_bomb_b: 'Half-Bomb R',
   feral_cat: 'Feral Cat',
   alter_future: 'Alter Future',
   targeted_attack: 'Target Attack',
+  imploding_kitten: 'Imploding Kitten',
 };
 
 const RULES = {
@@ -54,11 +52,10 @@ const RULES = {
   cat_potato: 'A pair (2 same) lets you steal a RANDOM card from another player. A triple lets you NAME a card to take.',
   cat_rainbow: 'A pair (2 same) lets you steal a RANDOM card from another player. A triple lets you NAME a card to take.',
   cat_melon: 'A pair (2 same) lets you steal a RANDOM card from another player. A triple lets you NAME a card to take.',
-  half_bomb_a: 'Combine LEFT + RIGHT halves on your turn to instantly KO any player you choose.',
-  half_bomb_b: 'Combine LEFT + RIGHT halves on your turn to instantly KO any player you choose.',
   feral_cat: 'Wild cat. Counts as ANY Cat card to form pairs or triples. Cannot be played alone.',
   alter_future: 'Privately view top 3 of the deck AND rearrange them in any order. (Party Pack)',
   targeted_attack: 'Like Attack — end your turn without drawing — BUT you pick any player to take 2 turns. (Party Pack)',
+  imploding_kitten: 'One hidden in deck. First draw: place it back face-up anywhere. Second time anyone draws it: instant explosion, NO defuse works.',
 };
 
 export default function Card({ card, selected, onClick, showHelp }) {

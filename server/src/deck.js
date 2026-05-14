@@ -14,11 +14,10 @@ export const CARD_TYPES = {
   CAT_POTATO: 'cat_potato',
   CAT_RAINBOW: 'cat_rainbow',
   CAT_MELON: 'cat_melon',
-  HALF_BOMB_A: 'half_bomb_a',
-  HALF_BOMB_B: 'half_bomb_b',
   FERAL_CAT: 'feral_cat',
   ALTER_FUTURE: 'alter_future',
   TARGETED_ATTACK: 'targeted_attack',
+  IMPLODING_KITTEN: 'imploding_kitten',
 };
 
 export const CAT_TYPES = [
@@ -43,11 +42,10 @@ export const CARD_LABEL = {
   cat_potato: 'Potato Cat',
   cat_rainbow: 'Rainbow Cat',
   cat_melon: 'Melon Cat',
-  half_bomb_a: 'Half-Bomb (Left)',
-  half_bomb_b: 'Half-Bomb (Right)',
   feral_cat: 'Feral Cat',
   alter_future: 'Alter the Future',
   targeted_attack: 'Targeted Attack',
+  imploding_kitten: 'Imploding Kitten',
 };
 
 const mk = (type, count) =>
@@ -66,8 +64,6 @@ export function buildDeck(playerCount) {
     ...mk(CARD_TYPES.CAT_POTATO, 4),
     ...mk(CARD_TYPES.CAT_RAINBOW, 4),
     ...mk(CARD_TYPES.CAT_MELON, 4),
-    ...mk(CARD_TYPES.HALF_BOMB_A, 1),
-    ...mk(CARD_TYPES.HALF_BOMB_B, 1),
     ...mk(CARD_TYPES.FERAL_CAT, 4),
     ...mk(CARD_TYPES.ALTER_FUTURE, 4),
     ...mk(CARD_TYPES.TARGETED_ATTACK, 3),
