@@ -202,57 +202,30 @@ export function playCards(g, playerId, cardIds, opts = {}) {
 }
 
 function applySingleCard(g, playerId, card, opts) {
-  const p = g.players.find((x) => x.id === playerId);
   switch (card.type) {
     case CARD_TYPES.SKIP:
-      logCard(g, `${p.name} plays Skip`);
-      g.turnsLeft -= 1;
-      if (g.turnsLeft <= 0) advanceTurn(g);
+      queueAction(g, { type: 'skip', by: playerId, nopes: [] });
       break;
-    case CARD_TYPES.ATTACK: {
-      logCard(g, `${p.name} plays Attack`);
-      g.turnsLeft = 0;
-      advanceTurn(g);
-      g.turnsLeft = 2;
+    case CARD_TYPES.ATTACK:
+      queueAction(g, { type: 'attack', by: playerId, nopes: [] });
       break;
-    }
     case CARD_TYPES.SHUFFLE:
-      logCard(g, `${p.name} plays Shuffle`);
-      g.deck = shuffle(g.deck);
+      queueAction(g, { type: 'shuffle', by: playerId, nopes: [] });
       break;
-    case CARD_TYPES.SEE_FUTURE: {
-      logCard(g, `${p.name} plays See Future`);
-      const top = g.deck.slice(-3).reverse();
-      g.seeFuturePeek = { playerId, cards: top };
+    case CARD_TYPES.SEE_FUTURE:
+      queueAction(g, { type: 'see_future', by: playerId, nopes: [] });
       break;
-    }
-    case CARD_TYPES.FAVOR: {
+    case CARD_TYPES.FAVOR:
       if (!opts.target) throw new Error('Pick a target');
-      queueAction(g, {
-        type: 'favor',
-        by: playerId,
-        target: opts.target,
-        nopes: [],
-      });
+      queueAction(g, { type: 'favor', by: playerId, target: opts.target, nopes: [] });
       break;
-    }
-    case CARD_TYPES.TARGETED_ATTACK: {
+    case CARD_TYPES.TARGETED_ATTACK:
       if (!opts.target) throw new Error('Pick a target');
-      logCard(g, `${p.name} plays Targeted Attack on ${g.players.find((x) => x.id === opts.target)?.name}`);
-      g.turnsLeft = 0;
-      const tIdx = g.players.findIndex((x) => x.id === opts.target);
-      if (tIdx < 0 || !g.players[tIdx].alive) throw new Error('Invalid target');
-      g.turnIdx = (tIdx - 1 + g.players.length) % g.players.length;
-      advanceTurn(g);
-      g.turnsLeft = 2;
+      queueAction(g, { type: 'targeted_attack', by: playerId, target: opts.target, nopes: [] });
       break;
-    }
-    case CARD_TYPES.ALTER_FUTURE: {
-      logCard(g, `${p.name} plays Alter the Future`);
-      const top = g.deck.slice(-3).reverse();
-      g.pendingAlter = { playerId, cards: top };
+    case CARD_TYPES.ALTER_FUTURE:
+      queueAction(g, { type: 'alter_future', by: playerId, nopes: [] });
       break;
-    }
     case CARD_TYPES.FERAL_CAT:
       throw new Error('Feral Cat plays only as part of a cat combo');
     case CARD_TYPES.NOPE:
@@ -261,23 +234,24 @@ function applySingleCard(g, playerId, card, opts) {
       throw new Error('Defuse plays only when you draw a bomb');
     case CARD_TYPES.BOMB:
       throw new Error('Cannot play bomb');
-    default:
-      // single cat card alone does nothing
+    default: {
+      const p = g.players.find((x) => x.id === playerId);
       logCard(g, `${p.name} discards ${card.type}`);
       break;
+    }
   }
 }
 
-function eligibleNopers(g) {
+function eligibleNopers(g, actorId) {
   return g.players
-    .filter((p) => p.alive)
+    .filter((p) => p.alive && p.id !== actorId)
     .filter((p) => g.hands[p.id].some((c) => c.type === CARD_TYPES.NOPE))
     .map((p) => p.id);
 }
 
 function queueAction(g, action) {
   action.passes = [];
-  action.eligible = eligibleNopers(g);
+  action.eligible = eligibleNopers(g, action.by);
   g.pendingAction = action;
   const by = g.players.find((p) => p.id === action.by);
   const tgt = g.players.find((p) => p.id === action.target);
@@ -305,8 +279,8 @@ export function playNope(g, playerId) {
   g.discard.push(card);
   g.pendingAction.nopes.push(playerId);
   g.pendingAction.passes = g.pendingAction.passes.filter((id) => id !== playerId);
-  g.pendingAction.eligible = eligibleNopers(g);
-  if (!g.pendingAction.eligible.includes(playerId)) {
+  g.pendingAction.eligible = eligibleNopers(g, g.pendingAction.by);
+  if (!g.pendingAction.eligible.includes(playerId) && playerId !== g.pendingAction.by) {
     g.pendingAction.eligible.push(playerId);
   }
   const p = g.players.find((x) => x.id === playerId);
@@ -327,16 +301,55 @@ export function resolvePending(g) {
   if (!a) return;
   g.pendingAction = null;
   const noped = a.nopes.length % 2 === 1;
-  if (noped) {
-    logCard(g, `Action ${a.type} was Noped`);
-    return;
-  }
   const by = g.players.find((p) => p.id === a.by);
   const tgt = g.players.find((p) => p.id === a.target);
+  if (noped) {
+    logCard(g, `${by?.name}'s ${a.type} was Noped`);
+    return;
+  }
   switch (a.type) {
+    case 'skip': {
+      logCard(g, `${by.name} plays Skip`);
+      g.turnsLeft -= 1;
+      if (g.turnsLeft <= 0) advanceTurn(g);
+      break;
+    }
+    case 'attack': {
+      logCard(g, `${by.name} plays Attack`);
+      g.turnsLeft = 0;
+      advanceTurn(g);
+      g.turnsLeft = 2;
+      break;
+    }
+    case 'shuffle': {
+      logCard(g, `${by.name} plays Shuffle`);
+      g.deck = shuffle(g.deck);
+      break;
+    }
+    case 'see_future': {
+      logCard(g, `${by.name} plays See Future`);
+      const top = g.deck.slice(-3).reverse();
+      g.seeFuturePeek = { playerId: a.by, cards: top };
+      break;
+    }
+    case 'alter_future': {
+      logCard(g, `${by.name} plays Alter the Future`);
+      const top = g.deck.slice(-3).reverse();
+      g.pendingAlter = { playerId: a.by, cards: top };
+      break;
+    }
+    case 'targeted_attack': {
+      const tIdx = g.players.findIndex((x) => x.id === a.target);
+      if (tIdx < 0 || !g.players[tIdx].alive) break;
+      logCard(g, `${by.name} plays Targeted Attack on ${tgt.name}`);
+      g.turnsLeft = 0;
+      g.turnIdx = (tIdx - 1 + g.players.length) % g.players.length;
+      advanceTurn(g);
+      g.turnsLeft = 2;
+      break;
+    }
     case 'favor': {
-      // wait for target to choose — set pendingExplosion-like sub-state
-      g.pendingAction = { ...a, type: 'favor_pick', nopes: [] };
+      g.pendingAction = { ...a, type: 'favor_pick', nopes: [], passes: [], eligible: [] };
       return;
     }
     case 'steal_random': {
@@ -366,7 +379,6 @@ export function resolvePending(g) {
     case 'half_bomb_ko': {
       tgt.alive = false;
       logCard(g, `${tgt.name} was KO'd by Half-Bomb combo!`);
-      // their hand to discard
       g.discard.push(...g.hands[a.target]);
       g.hands[a.target] = [];
       checkWin(g);
