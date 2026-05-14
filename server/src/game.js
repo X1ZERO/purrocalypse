@@ -37,6 +37,7 @@ export function createGame(players) {
     streakerId,
     pendingExplosion: null, // { playerId }
     pendingAction: null, // { type, by, target?, payload?, nopes: [], resolveAt }
+    pendingAlter: null, // { playerId, cards: [...] }
     log: [],
     over: false,
     winnerId: null,
@@ -75,6 +76,10 @@ export function publicState(g, viewerId) {
     yourPeek:
       g.seeFuturePeek && g.seeFuturePeek.playerId === viewerId
         ? g.seeFuturePeek.cards
+        : null,
+    yourAlter:
+      g.pendingAlter && g.pendingAlter.playerId === viewerId
+        ? g.pendingAlter.cards
         : null,
   };
 }
@@ -128,6 +133,7 @@ export function playCards(g, playerId, cardIds, opts = {}) {
   const cur = currentPlayer(g);
   if (!cur || cur.id !== playerId) throw new Error('Not your turn');
   if (g.pendingExplosion) throw new Error('Resolve explosion first');
+  if (g.pendingAlter) throw new Error('Finish Alter the Future first');
 
   const hand = g.hands[playerId];
   const { removed, remaining } = removeCardsFromHand(hand, cardIds);
@@ -135,14 +141,21 @@ export function playCards(g, playerId, cardIds, opts = {}) {
     throw new Error('Cards not in hand');
 
   const types = removed.map((c) => c.type);
-  const allSame = types.every((t) => t === types[0]);
+  const isCatLike = (t) => CAT_TYPES.includes(t) || t === CARD_TYPES.FERAL_CAT;
+  const isCatCombo = (n) => {
+    if (types.length !== n) return false;
+    if (!types.every(isCatLike)) return false;
+    const reals = types.filter((t) => t !== CARD_TYPES.FERAL_CAT);
+    if (reals.length === 0) return false;
+    return reals.every((t) => t === reals[0]);
+  };
 
   if (removed.length === 1) {
     const c = removed[0];
     g.hands[playerId] = remaining;
     g.discard.push(c);
     applySingleCard(g, playerId, c, opts);
-  } else if (removed.length === 2 && allSame && CAT_TYPES.includes(types[0])) {
+  } else if (isCatCombo(2)) {
     g.hands[playerId] = remaining;
     g.discard.push(...removed);
     if (!opts.target) throw new Error('Pick a target');
@@ -152,7 +165,7 @@ export function playCards(g, playerId, cardIds, opts = {}) {
       target: opts.target,
       nopes: [],
     });
-  } else if (removed.length === 3 && allSame && CAT_TYPES.includes(types[0])) {
+  } else if (isCatCombo(3)) {
     g.hands[playerId] = remaining;
     g.discard.push(...removed);
     if (!opts.target || !opts.cardType) throw new Error('Pick target + card');
@@ -217,6 +230,25 @@ function applySingleCard(g, playerId, card, opts) {
       });
       break;
     }
+    case CARD_TYPES.TARGETED_ATTACK: {
+      if (!opts.target) throw new Error('Pick a target');
+      logCard(g, `${p.name} plays Targeted Attack on ${g.players.find((x) => x.id === opts.target)?.name}`);
+      g.turnsLeft = 0;
+      const tIdx = g.players.findIndex((x) => x.id === opts.target);
+      if (tIdx < 0 || !g.players[tIdx].alive) throw new Error('Invalid target');
+      g.turnIdx = (tIdx - 1 + g.players.length) % g.players.length;
+      advanceTurn(g);
+      g.turnsLeft = 2;
+      break;
+    }
+    case CARD_TYPES.ALTER_FUTURE: {
+      logCard(g, `${p.name} plays Alter the Future`);
+      const top = g.deck.slice(-3).reverse();
+      g.pendingAlter = { playerId, cards: top };
+      break;
+    }
+    case CARD_TYPES.FERAL_CAT:
+      throw new Error('Feral Cat plays only as part of a cat combo');
     case CARD_TYPES.NOPE:
       throw new Error('Nope only plays on pending action');
     case CARD_TYPES.DEFUSE:
@@ -306,6 +338,22 @@ export function resolvePending(g) {
   }
 }
 
+export function alterCommit(g, playerId, orderedIds) {
+  if (!g.pendingAlter || g.pendingAlter.playerId !== playerId)
+    throw new Error('No alter pending');
+  const ids = g.pendingAlter.cards.map((c) => c.id);
+  if (orderedIds.length !== ids.length ||
+      !orderedIds.every((id) => ids.includes(id)) ||
+      new Set(orderedIds).size !== orderedIds.length)
+    throw new Error('Invalid order');
+  const byId = new Map(g.pendingAlter.cards.map((c) => [c.id, c]));
+  const newTop = orderedIds.map((id) => byId.get(id));
+  for (let i = 0; i < newTop.length; i++) {
+    g.deck[g.deck.length - 1 - i] = newTop[i];
+  }
+  g.pendingAlter = null;
+}
+
 export function favorGive(g, targetId, cardId) {
   const a = g.pendingAction;
   if (!a || a.type !== 'favor_pick') throw new Error('No favor pending');
@@ -327,6 +375,7 @@ export function drawCard(g, playerId) {
   if (!cur || cur.id !== playerId) throw new Error('Not your turn');
   if (g.pendingExplosion) throw new Error('Resolve explosion');
   if (g.pendingAction) throw new Error('Resolve pending action');
+  if (g.pendingAlter) throw new Error('Finish Alter the Future first');
   if (g.deck.length === 0) {
     g.deck = shuffle(g.discard);
     g.discard = [];

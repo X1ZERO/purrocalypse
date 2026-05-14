@@ -16,6 +16,9 @@ export const CARD_TYPES = {
   CAT_MELON: 'cat_melon',
   HALF_BOMB_A: 'half_bomb_a',
   HALF_BOMB_B: 'half_bomb_b',
+  FERAL_CAT: 'feral_cat',
+  ALTER_FUTURE: 'alter_future',
+  TARGETED_ATTACK: 'targeted_attack',
 };
 
 export const CAT_TYPES = [
@@ -42,6 +45,9 @@ export const CARD_LABEL = {
   cat_melon: 'Melon Cat',
   half_bomb_a: 'Half-Bomb (Left)',
   half_bomb_b: 'Half-Bomb (Right)',
+  feral_cat: 'Feral Cat',
+  alter_future: 'Alter the Future',
+  targeted_attack: 'Targeted Attack',
 };
 
 const mk = (type, count) =>
@@ -62,12 +68,17 @@ export function buildDeck(playerCount) {
     ...mk(CARD_TYPES.CAT_MELON, 4),
     ...mk(CARD_TYPES.HALF_BOMB_A, 1),
     ...mk(CARD_TYPES.HALF_BOMB_B, 1),
+    ...mk(CARD_TYPES.FERAL_CAT, 4),
+    ...mk(CARD_TYPES.ALTER_FUTURE, 4),
+    ...mk(CARD_TYPES.TARGETED_ATTACK, 3),
   ];
   if (playerCount > 5) {
     deck.push(...mk(CARD_TYPES.SKIP, 2));
     deck.push(...mk(CARD_TYPES.ATTACK, 2));
     deck.push(...mk(CARD_TYPES.NOPE, 2));
     deck.push(...mk(CARD_TYPES.SEE_FUTURE, 2));
+    deck.push(...mk(CARD_TYPES.ALTER_FUTURE, 2));
+    deck.push(...mk(CARD_TYPES.TARGETED_ATTACK, 2));
   }
   return deck;
 }

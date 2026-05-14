@@ -1,8 +1,39 @@
 import { useState } from 'react';
 import { emit } from './socket.js';
 import Card, { LABELS } from './Card.jsx';
+import Rules from './Rules.jsx';
+
+function AlterUI({ cards, onSubmit }) {
+  const [order, setOrder] = useState(cards.map((c) => c.id));
+  const byId = Object.fromEntries(cards.map((c) => [c.id, c]));
+  const move = (idx, dir) => {
+    const j = idx + dir;
+    if (j < 0 || j >= order.length) return;
+    const next = order.slice();
+    [next[idx], next[j]] = [next[j], next[idx]];
+    setOrder(next);
+  };
+  return (
+    <div className="panel">
+      <h4>🔮 Alter the Future — reorder top 3 (top of deck = leftmost)</h4>
+      <div className="peek">
+        {order.map((id, i) => (
+          <div key={id} style={{ textAlign: 'center' }}>
+            <Card card={byId[id]} onClick={() => {}} />
+            <div style={{ marginTop: 6 }}>
+              <button className="secondary" onClick={() => move(i, -1)} disabled={i === 0}>◀</button>
+              <button className="secondary" onClick={() => move(i, 1)} disabled={i === order.length - 1} style={{ marginLeft: 4 }}>▶</button>
+            </div>
+          </div>
+        ))}
+      </div>
+      <button className="gold" onClick={() => onSubmit(order)} style={{ marginTop: 12 }}>Confirm order</button>
+    </div>
+  );
+}
 
 const CAT_TYPES = ['cat_taco', 'cat_beard', 'cat_potato', 'cat_rainbow', 'cat_melon'];
+const isCatLike = (t) => CAT_TYPES.includes(t) || t === 'feral_cat';
 
 export default function Game({ state, lobby, myId }) {
   const [selected, setSelected] = useState([]);
@@ -29,12 +60,20 @@ export default function Game({ state, lobby, myId }) {
     const cards = state.yourHand.filter((c) => selected.includes(c.id));
     if (cards.length === 0) return null;
     const types = cards.map((c) => c.type);
-    if (cards.length === 1) return { needTarget: types[0] === 'favor' };
-    const allSame = types.every((t) => t === types[0]);
-    if (cards.length === 2 && allSame && CAT_TYPES.includes(types[0]))
-      return { needTarget: true };
-    if (cards.length === 3 && allSame && CAT_TYPES.includes(types[0]))
-      return { needTarget: true, needNamed: true };
+    if (cards.length === 1) {
+      const t = types[0];
+      if (t === 'feral_cat') return false;
+      return { needTarget: t === 'favor' || t === 'targeted_attack' };
+    }
+    const isCatCombo = (n) => {
+      if (types.length !== n) return false;
+      if (!types.every(isCatLike)) return false;
+      const reals = types.filter((t) => t !== 'feral_cat');
+      if (reals.length === 0) return false;
+      return reals.every((t) => t === reals[0]);
+    };
+    if (isCatCombo(2)) return { needTarget: true };
+    if (isCatCombo(3)) return { needTarget: true, needNamed: true };
     if (
       cards.length === 2 &&
       types.includes('half_bomb_a') &&
@@ -89,6 +128,11 @@ export default function Game({ state, lobby, myId }) {
 
   const favorGive = async (cardId) => {
     try { await emit('game:favorGive', { cardId }); }
+    catch (e) { alert(e.message); }
+  };
+
+  const submitAlter = async (orderedIds) => {
+    try { await emit('game:alterCommit', { orderedIds }); }
     catch (e) { alert(e.message); }
   };
 
@@ -150,6 +194,10 @@ export default function Game({ state, lobby, myId }) {
         </div>
       )}
 
+      <div style={{ textAlign: 'right', marginBottom: 8 }}>
+        <Rules />
+      </div>
+
       <div className="panel">
         <h3>Players</h3>
         <div className="players-list">
@@ -194,6 +242,10 @@ export default function Game({ state, lobby, myId }) {
         </div>
       )}
 
+      {state.yourAlter && (
+        <AlterUI cards={state.yourAlter} onSubmit={submitAlter} />
+      )}
+
       <div className="panel">
         <h3>Your hand</h3>
         <div className="hand">
@@ -206,6 +258,7 @@ export default function Game({ state, lobby, myId }) {
               card={c}
               selected={selected.includes(c.id)}
               onClick={() => toggle(c.id)}
+              showHelp
             />
           ))}
         </div>

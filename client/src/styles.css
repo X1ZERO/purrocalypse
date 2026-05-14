@@ -167,3 +167,17 @@ input {
   z-index: 100;
 }
 .target-picker .panel { max-width: 500px; width: 90%; }
+
+.rules-panel { max-width: 760px !important; max-height: 85vh; overflow-y: auto; }
+.rules-panel h3 { margin-top: 16px; margin-bottom: 6px; color: var(--gold); }
+.rules-panel ol, .rules-panel ul { padding-left: 20px; }
+.rules-panel li { margin: 4px 0; }
+.rules-grid { display: flex; flex-direction: column; gap: 10px; }
+.rules-row { display: flex; gap: 14px; align-items: center; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 8px; }
+.rules-row .card.mini { width: 70px; height: 100px; font-size: 0.7rem; flex-shrink: 0; }
+.rules-row .card.mini .icon { font-size: 1.2rem; }
+.rules-text { font-size: 0.9rem; color: var(--text); line-height: 1.35; }
+
+.card.feral_cat { background: linear-gradient(135deg, #8b5a2b, #5a3a1b); }
+.card.alter_future { background: linear-gradient(135deg, #6a4ca5, #3a1d6b); }
+.card.targeted_attack { background: linear-gradient(135deg, #c41e3a, #6b0a1a); }

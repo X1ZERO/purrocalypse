@@ -128,6 +128,14 @@ io.on('connection', (socket) => {
   );
 
   socket.on(
+    'game:alterCommit',
+    safe(({ orderedIds }) => {
+      const room = requireRoom();
+      actions.alterCommit(room, io, playerId, orderedIds);
+    })
+  );
+
+  socket.on(
     'game:draw',
     safe(() => {
       const room = requireRoom();

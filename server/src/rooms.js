@@ -5,6 +5,7 @@ import {
   playNope,
   resolvePending,
   favorGive,
+  alterCommit,
   drawCard,
   defuse,
   explode,
@@ -123,6 +124,10 @@ export const actions = {
   },
   favorGive(room, io, targetId, cardId) {
     favorGive(room.game, targetId, cardId);
+    broadcast(room, io);
+  },
+  alterCommit(room, io, playerId, orderedIds) {
+    alterCommit(room.game, playerId, orderedIds);
     broadcast(room, io);
   },
   draw(room, io, playerId) {
