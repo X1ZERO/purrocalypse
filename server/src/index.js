@@ -16,6 +16,13 @@ import {
 const PORT = process.env.PORT || 3001;
 const app = express();
 app.use(cors());
+app.get('/', (_, res) =>
+  res.json({
+    name: 'purrocalypse-server',
+    ok: true,
+    msg: 'Socket.IO game server. Connect via the client app, not your browser.',
+  })
+);
 app.get('/health', (_, res) => res.json({ ok: true }));
 
 const server = http.createServer(app);
