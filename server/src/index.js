@@ -13,6 +13,7 @@ import {
   startGame,
   broadcast,
   actions,
+  findRoomByPlayer,
 } from './rooms.js';
 
 const PORT = process.env.PORT || 3001;
@@ -58,6 +59,13 @@ io.on('connection', (socket) => {
       playerId = pid || nanoid(10);
       name = (n || 'Player').slice(0, 20);
       socket.join(`p:${playerId}`);
+      const existing = findRoomByPlayer(playerId);
+      if (existing) {
+        roomId = existing.id;
+        socket.join(existing.id);
+        broadcast(existing, io);
+        return { playerId, name, roomId: existing.id };
+      }
       return { playerId, name };
     })
   );

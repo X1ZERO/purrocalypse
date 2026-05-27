@@ -23,13 +23,17 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (connected && !myId && name) {
-      emit('hello', { name }).then((r) => {
-        setMyId(r.playerId);
-        localStorage.setItem('pid', r.playerId);
+    if (connected && name) {
+      emit('hello', { name, playerId: myId || undefined }).then((r) => {
+        if (!r) return;
+        if (r.playerId && r.playerId !== myId) {
+          setMyId(r.playerId);
+          localStorage.setItem('pid', r.playerId);
+        }
+        if (r.roomId) setJoined(r.roomId);
       });
     }
-  }, [connected, myId, name]);
+  }, [connected, name]);
 
   const startGame = async () => {
     try { await emit('room:start', {}); }

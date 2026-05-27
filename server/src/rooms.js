@@ -15,6 +15,7 @@ import {
 } from './game.js';
 
 const rooms = new Map();
+const playerRoom = new Map();
 
 const NOPE_WINDOW_MS = 3500;
 
@@ -36,6 +37,7 @@ export function createRoom(hostId, hostName) {
     pendingResolveTimer: null,
   };
   rooms.set(id, room);
+  playerRoom.set(hostId, id);
   return room;
 }
 
@@ -43,24 +45,39 @@ export function getRoom(id) {
   return rooms.get(id);
 }
 
+export function findRoomByPlayer(playerId) {
+  const rid = playerRoom.get(playerId);
+  if (!rid) return null;
+  const room = rooms.get(rid);
+  if (!room) {
+    playerRoom.delete(playerId);
+    return null;
+  }
+  return room;
+}
+
 export function joinRoom(id, playerId, name) {
   const room = rooms.get(id);
   if (!room) throw new Error('Room not found');
+  if (room.players.some((p) => p.id === playerId)) {
+    playerRoom.set(playerId, id);
+    return room;
+  }
   if (room.game) throw new Error('Game already started');
   if (room.players.length >= 10) throw new Error('Room full');
-  if (room.players.some((p) => p.id === playerId)) return room;
   room.players.push({ id: playerId, name });
+  playerRoom.set(playerId, id);
   return room;
 }
 
 export function leaveRoom(id, playerId) {
   const room = rooms.get(id);
   if (!room) return null;
-  room.players = room.players.filter((p) => p.id !== playerId);
-  if (room.game) {
-    const p = room.game.players.find((x) => x.id === playerId);
-    if (p) p.alive = false;
+  if (room.game && !room.game.over) {
+    return room;
   }
+  room.players = room.players.filter((p) => p.id !== playerId);
+  playerRoom.delete(playerId);
   if (room.players.length === 0) {
     rooms.delete(id);
     return null;
